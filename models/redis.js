@@ -24,3 +24,24 @@ exports.throw = function(bottle, callback){
         });
     });
 }
+
+exports.pick = function(info, callback) {
+    var type = {all:Math.round(Math.random()), male:0, female: 1};
+    info.type = info.type || "all";
+    // 根据请求的瓶子类型到不同的数据库中取
+    client.SELECT(type[info.type], function(){
+        client.RANDOMKEY(function(err, bottleId){
+            if(!bottleId){
+                return callback({code:0, msg:"大海空空如也..."});
+            }
+            // 根据漂流瓶ID取到漂流瓶完整信息
+            client.HGETALL(bottleId, function(err, bottle){
+                if(err) {
+                    return callback({code:0, msg:"漂流瓶破损了..."});
+                }
+                callback({code:1, msg:bottle});
+                client.DEL(bottleId);
+            });
+        });
+    });
+}
