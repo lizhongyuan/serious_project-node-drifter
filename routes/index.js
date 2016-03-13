@@ -31,6 +31,13 @@ module.exports = function(app) {
       res.json(result);
     });
   });
+
+  // 扔回海里一个漂流瓶
+  app.post("/back", function(req, res){
+    reids.throwback(req.body, function(result){
+      res.json(result);
+    });
+  });
 }
 
 /*

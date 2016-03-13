@@ -4,9 +4,10 @@
 
 var redis = require("redis");
 var client = redis.createClient();
-//var client = redis.createClient(port, host, options);
+//var client = redis.createClient("127.0.0.1", 6379, null);
 
 exports.throw = function(bottle, callback){
+    console.log(typeof bottle);
     bottle.time = bottle.time || Date.now();
     // 为每个漂流瓶随机生成一个id
     var bottleId = Math.random().toString(16);
@@ -26,13 +27,17 @@ exports.throw = function(bottle, callback){
 }
 
 exports.pick = function(info, callback) {
+    // 20%概率捡到海星
+    if( Math.random() <= 0.2 ) {
+        return callback({code: 0, msg:"海星"});
+    }
     var type = {all:Math.round(Math.random()), male:0, female: 1};
     info.type = info.type || "all";
     // 根据请求的瓶子类型到不同的数据库中取
     client.SELECT(type[info.type], function(){
         client.RANDOMKEY(function(err, bottleId){
             if(!bottleId){
-                return callback({code:0, msg:"大海空空如也..."});
+                return callback({code:0, msg:"海星"});
             }
             // 根据漂流瓶ID取到漂流瓶完整信息
             client.HGETALL(bottleId, function(err, bottle){
@@ -44,4 +49,20 @@ exports.pick = function(info, callback) {
             });
         });
     });
+}
+
+exports.throwback = function(bottle, callback){
+    var type = {male:0, female:1};
+    var bottleId = Math.random().toString(16);
+
+    client.SELECT(type[bottle.type], function(){
+        //以hash类型保存漂流瓶对象
+        client.HMSET(bottleId, bottle, function(err, result){
+            if(err) {
+                return callback(err);
+            }
+            callback({code:1, msg:result});
+            client.PEXPIRE(bottleId, bottle.time + 86400000 - Date.now());
+        });
+    })
 }
