@@ -28,8 +28,9 @@ module.exports = function(app) {
       }
     }
     redis.throw(req.body, function(result){
-      res.json(result);
+      return res.json(result);
     });
+    //redis.throw(req.body, function(){});  // this is for test
   });
 
   // 扔回海里一个漂流瓶
