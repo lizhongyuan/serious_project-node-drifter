@@ -10,23 +10,7 @@ var client3 = redis.createClient();
 
 // 每天无限制扔瓶子
 exports.throw = function(bottle, callback){
-    client2.SELECT(2, function(){       // 0male, 1female
-        client2.SELECT(bottle.owner, function(err, result){
-            if(result >= 10) {
-                return callback({code:0, msg:"今天扔瓶子的机会已经用完了"});
-            }
-            // 未满10次
-            client2.INCR(bottle.owner, function(){
-                client2.TTL(bottle.owner, function(err, ttl){
-                    if(ttl == -1) {     // -1表示该用户今天第一个瓶子
-                        client2.EXPIRE(bottle.owner, 86400);
-                    }
-                });
-            });
-
-            // 原代码块
-        });
-    });
+    console.log(typeof bottle);
     bottle.time = bottle.time || Date.now();
     // 为每个漂流瓶随机生成一个id
     var bottleId = Math.random().toString(16);
@@ -63,6 +47,8 @@ exports.throw = function(bottle, callback) {
                     }
                 });
             });
+
+            //原代码块
         });
     });
 }
