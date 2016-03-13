@@ -5,11 +5,28 @@
 var redis = require("redis");
 var client = redis.createClient();
 var client2 = redis.createClient();     //用来检查2号数据库，检查每个用户一天一共扔了几次
+var client3 = redis.createClient();
 //var client = redis.createClient("127.0.0.1", 6379, null);
 
 // 每天无限制扔瓶子
 exports.throw = function(bottle, callback){
-    console.log(typeof bottle);
+    client2.SELECT(2, function(){       // 0male, 1female
+        client2.SELECT(bottle.owner, function(err, result){
+            if(result >= 10) {
+                return callback({code:0, msg:"今天扔瓶子的机会已经用完了"});
+            }
+            // 未满10次
+            client2.INCR(bottle.owner, function(){
+                client2.TTL(bottle.owner, function(err, ttl){
+                    if(ttl == -1) {     // -1表示该用户今天第一个瓶子
+                        client2.EXPIRE(bottle.owner, 86400);
+                    }
+                });
+            });
+
+            // 原代码块
+        });
+    });
     bottle.time = bottle.time || Date.now();
     // 为每个漂流瓶随机生成一个id
     var bottleId = Math.random().toString(16);
@@ -40,14 +57,18 @@ exports.throw = function(bottle, callback) {
             }
             // 未满10次
             client2.INCR(bottle.owner, function(){
-
+                client2.TTL(bottle.owner, function(err, ttl){
+                    if(ttl == -1) {     // -1表示该用户今天第一个瓶子
+                        client2.EXPIRE(bottle.owner, 86400);
+                    }
+                });
             });
         });
     });
 }
 */
 
-
+//
 exports.pick = function(info, callback) {
     // 20%概率捡到海星
     if( Math.random() <= 0.2 ) {
@@ -72,6 +93,28 @@ exports.pick = function(info, callback) {
         });
     });
 }
+
+/*
+exports.pick = function(info, callback){
+    client3.SELECT(3, function(){
+        client3.GET(info.user, function(err, result){
+            if(err){
+                return callback(err);
+            }
+            if(result >= 10) {
+                return callback({code:0, msg:"今天的机会都用完了"});
+            }
+            client3.INCR(info.user, function(){
+                client3.TTL(info.user, function(err, ttl){
+                    if(ttl == -1){
+                        client3.EXPIRE(info.user, 86400);
+                    }
+                });
+            });
+        });
+    });
+}
+*/
 
 exports.throwback = function(bottle, callback){
     var type = {male:0, female:1};
